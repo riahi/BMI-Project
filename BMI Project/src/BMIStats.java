@@ -481,7 +481,7 @@ public class BMIStats {
 		LinkedList<MedicalRecord> mList = null;
 		LinkedList<CPTCode> CPTCodes = null;
 		
-		while(!input.equals("q") || !input.equals("Q")) {
+		while(!(input.equals("q")) && !(input.equals("Q"))) {
 			input = "";
 			printMenu(input);
 			input = br.readLine();
@@ -551,6 +551,8 @@ public class BMIStats {
 				else
 					writeToCSV(mList, input);
 			}
+			else if(input.equals("q") || input.equals("Q"))
+				System.out.println("Goodbye");
 			else
 				System.out.println("Invalid input. Please try again");
 			
