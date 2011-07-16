@@ -1,9 +1,13 @@
-// 2011-07-05
+// 2011-07-14
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
 
 public class MedicalRecord {
+	public static final int DIAGNOSIS_NUMBER = 5;
+	public static final int PROCEDURE_NUMBER = 22;
+	
 	private int MRN;
 	private int Age;
 	private double weight;
@@ -12,12 +16,62 @@ public class MedicalRecord {
 	private String patientName;
 	private String gender;
 	private String surgeon;
-	private String[][] Diagnosis;
-	private String[][] Procedure;
+	private ArrayList<ICD9Code> diagnosis;
+	private ArrayList<CPTCode> procedure;
 	private Calendar DOB;
 	private Calendar DOS;
+	private String mod1;
+	private String mod2;
+	private int charge;
 	
 	public MedicalRecord(AnesthesiaRecord a, BillingRecord b) {
+		int MRN1, MRN2;
+		String gender1, gender2;
+		String surgeon1, surgeon2;
+		
+		this.DOB = a.getDOB();
+		this.DOS = a.getDOS();
+		this.weight = a.getWeight();
+		this.height = a.getHeight();
+		surgeon1 = a.getSurgeon();
+		this.BMI = a.getBMI();
+		gender1 = a.getGender();
+		MRN1 = a.getMRN();
+		
+		MRN2 = b.getMRN();
+		this.patientName = b.getPatientName();
+		this.Age = b.getAge();
+		gender2 = b.getGender();
+		surgeon2 = b.getSurgeon();
+		this.diagnosis = b.getDiagnosis();
+		this.procedure = b.getProcedure();
+		
+		if (MRN1 == MRN2)
+			this.MRN = MRN1;
+		else {
+			System.out.println("MRN does not match for " + patientName + ". Defaulting to Anesthesia's value");
+			this.MRN = MRN1;
+		}
+		
+		if (surgeon1.equals(surgeon2))
+			this.surgeon = surgeon1;
+		else {
+			System.out.println("Surgeon does not match for " + patientName + ". Defaulting to Anesthesia's value");
+			this.surgeon = surgeon1;
+		}
+		
+		if (gender1.equals(gender2))
+			this.gender = gender1;
+		else {
+			System.out.println("Gender does not match for " + patientName + ". Defaulting to Anesthesia's value");
+			this.gender = gender1;
+		}	
+		
+		mod1 = null;
+		mod2 = null;
+	}
+	
+	/*public MedicalRecord(AnesthesiaRecord a, BillingRecord b, ModifierRecord c) {
 		int MRN1, MRN2;
 		String gender1, gender2;
 		String surgeon1, surgeon2;
@@ -58,9 +112,13 @@ public class MedicalRecord {
 		else {
 			System.out.println("Gender does not match for " + patientName + ". Defaulting to Anesthesia's value");
 			this.gender = gender1;
-		}	
+		}
 		
+		this.mod1 = c.getMod1();
+		this.mod2 = c.getMod2();
+		this.charge = c.getCharge();
 	}
+	*/
 	
 	public String toString() {
 		String temp = new String("");
@@ -71,47 +129,71 @@ public class MedicalRecord {
 		temp += patientName + "~" + Age;
 		
 		// Diagnosis fields
-		for (int i = 0; i < 5; i++) {
-			for (int j = 0; j < 2; j++) {
-				// Escape the comments
-				if(j % 2 == 1)
-					temp += "~" + Diagnosis[i][j];
-				else
-					temp += "~" + Diagnosis[i][j];
+		// If diagnosis has less than the diagnosis count specified by
+		// DIAGNOSIS_NUMBER, pad it out to the proper amount
+		if (diagnosis.size() < DIAGNOSIS_NUMBER) {
+			int difference = DIAGNOSIS_NUMBER - diagnosis.size();
+			for (int i = 0; i < diagnosis.size(); i++) {
+				temp += "~" + diagnosis.get(i).toString();
+			}
+			for (int i = 0; i < difference; i++) {
+				temp += "~" + "" + "~" + "";
+			}
+		} else {
+			for (int i = 0; i < diagnosis.size(); i++) {
+				temp += "~" + diagnosis.get(i).toString();
 			}
 		}
-		
-		// Procedure fields
-				for (int i = 0; i < 22; i++) {
-					for (int j = 0; j < 2; j++) {
-						// Escape the comments
-						if(j % 2 == 1)
-							temp += "~" + Procedure[i][j];
-						else
-							temp += "~" + Procedure[i][j];
-					}
-				}
+
+		// Procedure Fields
+		// If procedure has less than the procedure count specific by
+		// PROCEDURE_NUMBER, pad it out to the proper amount
+		if (procedure.size() < PROCEDURE_NUMBER) {
+			int difference = PROCEDURE_NUMBER - procedure.size();
+			for (int i = 0; i < procedure.size(); i++) {
+				temp += "~" + procedure.get(i).toString();
+			}
+			for (int i = 0; i < difference; i++) {
+				temp += "~" + "" + "~" + "";
+			}
+		} else {
+			for (int i = 0; i < procedure.size(); i++) {
+				temp += "~" + procedure.get(i).toString();
+			}
+		}
+
 		
 		return temp;
 	}
 	
+	public String createKey() {
+		String key;
+		SimpleDateFormat dateFormatter = new SimpleDateFormat("MM/dd/yyyy");
+	
+		key = "" + dateFormatter.format(this.getDOS().getTime());
+		key = key + "~" + this.getSurgeon();
+		key = key + "~" + this.getMRN();
+		key = key + "~" + this.getGender();	
+		return key;	
+	}
+
 	public static void main(String args[]) {
 		Calendar DOB = Calendar.getInstance();
 		DOB.set(1988, 7, 3);
 		Calendar DOS = Calendar.getInstance();
 		DOS.set(1999, 0, 1);
 		AnesthesiaRecord aRecord = new AnesthesiaRecord(DOB, DOS, 175.0, 68.1, "Arun Ramappa", 25.6, "Male", 1234567);
-		
-		String[][] Diagnosis = new String[5][2];
-		Diagnosis[0][0] = "11223";
-		Diagnosis[0][1] = "Awesome pubic bone";
-		
-		String[][] Procedure = new String[22][2];
-		Procedure[0][0] = "3456";
-		Procedure[0][1] = "Evaluation for awesome pubic bone";
-		
-		
-		BillingRecord bRecord = new BillingRecord(1234567, "Shahein Tajmir", 22, "Male", "Arun Ramappa", DOS, Diagnosis, Procedure);
+
+		ArrayList<ICD9Code> Diagnosis = new ArrayList<ICD9Code>();
+		Diagnosis.add(new ICD9Code("11223", "Awesome pubic bone"));
+		//Diagnosis.add(new ICD9Code("11223", "Awesome pubic bone"));
+		//Diagnosis.add(new ICD9Code("11223", "Awesome pubic bone"));
+
+		ArrayList<CPTCode> Procedure = new ArrayList<CPTCode>();
+		Procedure.add(new CPTCode("3456", "Evaluation for awesome pubic bone"));
+
+		BillingRecord bRecord = new BillingRecord(1234567, "Shahein Tajmir",
+				22, "Male", "Arun Ramappa", DOS, Diagnosis, Procedure);
 		
 		MedicalRecord mRecord = new MedicalRecord(aRecord, bRecord);
 		
@@ -232,34 +314,6 @@ public class MedicalRecord {
 	}
 
 	/**
-	 * @return the diagnosis
-	 */
-	public String[][] getDiagnosis() {
-		return Diagnosis;
-	}
-
-	/**
-	 * @param diagnosis the diagnosis to set
-	 */
-	public void setDiagnosis(String[][] diagnosis) {
-		Diagnosis = diagnosis;
-	}
-
-	/**
-	 * @return the procedure
-	 */
-	public String[][] getProcedure() {
-		return Procedure;
-	}
-
-	/**
-	 * @param procedure the procedure to set
-	 */
-	public void setProcedure(String[][] procedure) {
-		Procedure = procedure;
-	}
-
-	/**
 	 * @return the dOB
 	 */
 	public Calendar getDOB() {
@@ -287,16 +341,33 @@ public class MedicalRecord {
 		DOS = dOS;
 	}
 
-	public String createKey() {
-		String key;
-		SimpleDateFormat dateFormatter = new SimpleDateFormat("MM/dd/yyyy");
-
-		key = "" + dateFormatter.format(this.getDOS().getTime());
-		key = key + "~" + this.getSurgeon();
-		key = key + "~" + this.getMRN();
-		key = key + "~" + this.getGender();	
-		return key;	
+	/**
+	 * @return the diagnosis
+	 */
+	public ArrayList<ICD9Code> getDiagnosis() {
+		return diagnosis;
 	}
-	
-	
+
+	/**
+	 * @param diagnosis
+	 *            the diagnosis to set
+	 */
+	public void setDiagnosis(ArrayList<ICD9Code> diagnosis) {
+		this.diagnosis = diagnosis;
+	}
+
+	/**
+	 * @return the procedure
+	 */
+	public ArrayList<CPTCode> getProcedure() {
+		return procedure;
+	}
+
+	/**
+	 * @param procedure
+	 *            the procedure to set
+	 */
+	public void setProcedure(ArrayList<CPTCode> procedure) {
+		this.procedure = procedure;
+	}
 }

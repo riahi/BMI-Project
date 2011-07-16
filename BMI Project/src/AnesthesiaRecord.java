@@ -1,9 +1,15 @@
-// 2010-07-05 
-// Shahein Tajmir
-
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
+/**
+ * Class that represents each entry in the Anesthesia Database as provided to me
+ * by Sarah Nabel. This and the suite of MedicalRecord, AnesthesiaRecord,
+ * BillingRecord, and ModifierRecord will need to be refactored at some point,
+ * but not today.
+ * 
+ * @author Shahein Tajmir
+ * @version 2011-07-15
+ */
 public class AnesthesiaRecord {
 	private Calendar DOB;
 	private Calendar DOS;
@@ -13,8 +19,9 @@ public class AnesthesiaRecord {
 	private double BMI;
 	private String gender;
 	private int MRN;
-	
-	public AnesthesiaRecord(Calendar DOB, Calendar DOS, double weight, double height, String surgeon, double BMI, String gender, int MRN) {
+
+	public AnesthesiaRecord(Calendar DOB, Calendar DOS, double weight,
+			double height, String surgeon, double BMI, String gender, int MRN) {
 		this.setDOB(DOB);
 		this.setDOS(DOS);
 		this.setWeight(weight);
@@ -24,14 +31,27 @@ public class AnesthesiaRecord {
 		this.setGender(gender);
 		this.setMRN(MRN);
 	}
-	
+
 	public String toString() {
 		String temp = new String("");
 		SimpleDateFormat dateFormatter = new SimpleDateFormat("MM/dd/yyyy");
-		
-		temp += MRN + " " + dateFormatter.format(DOB.getTime()) + " " + dateFormatter.format(DOS.getTime()) + " " + weight + " " + height + " " + surgeon + " " + BMI + " " + gender;
-		
+
+		temp += MRN + " " + dateFormatter.format(DOB.getTime()) + " "
+				+ dateFormatter.format(DOS.getTime()) + " " + weight + " "
+				+ height + " " + surgeon + " " + BMI + " " + gender;
+
 		return temp;
+	}
+
+	public String createKey() {
+		String key;
+		SimpleDateFormat dateFormatter = new SimpleDateFormat("MM/dd/yyyy");
+	
+		key = "" + dateFormatter.format(this.getDOS().getTime());
+		key = key + "~" + this.getSurgeon();
+		key = key + "~" + this.getMRN();
+		key = key + "~" + this.getGender();
+		return key;
 	}
 
 	/**
@@ -42,7 +62,8 @@ public class AnesthesiaRecord {
 	}
 
 	/**
-	 * @param dOB the dOB to set
+	 * @param dOB
+	 *            the dOB to set
 	 */
 	public void setDOB(Calendar dOB) {
 		DOB = dOB;
@@ -56,7 +77,8 @@ public class AnesthesiaRecord {
 	}
 
 	/**
-	 * @param dOS the dOS to set
+	 * @param dOS
+	 *            the dOS to set
 	 */
 	public void setDOS(Calendar dOS) {
 		DOS = dOS;
@@ -70,7 +92,8 @@ public class AnesthesiaRecord {
 	}
 
 	/**
-	 * @param weight the weight to set
+	 * @param weight
+	 *            the weight to set
 	 */
 	public void setWeight(double weight) {
 		this.weight = weight;
@@ -84,7 +107,8 @@ public class AnesthesiaRecord {
 	}
 
 	/**
-	 * @param height the height to set
+	 * @param height
+	 *            the height to set
 	 */
 	public void setHeight(double height) {
 		this.height = height;
@@ -98,7 +122,8 @@ public class AnesthesiaRecord {
 	}
 
 	/**
-	 * @param surgeon the surgeon to set
+	 * @param surgeon
+	 *            the surgeon to set
 	 */
 	public void setSurgeon(String surgeon) {
 		this.surgeon = surgeon;
@@ -112,7 +137,8 @@ public class AnesthesiaRecord {
 	}
 
 	/**
-	 * @param bMI the bMI to set
+	 * @param bMI
+	 *            the bMI to set
 	 */
 	public void setBMI(double bMI) {
 		BMI = bMI;
@@ -126,7 +152,8 @@ public class AnesthesiaRecord {
 	}
 
 	/**
-	 * @param gender the gender to set
+	 * @param gender
+	 *            the gender to set
 	 */
 	public void setGender(String gender) {
 		this.gender = gender;
@@ -140,29 +167,20 @@ public class AnesthesiaRecord {
 	}
 
 	/**
-	 * @param mRN the mRN to set
+	 * @param mRN
+	 *            the mRN to set
 	 */
 	public void setMRN(int mRN) {
 		MRN = mRN;
 	}
-	
-	public String createKey() {
-		String key;
-		SimpleDateFormat dateFormatter = new SimpleDateFormat("MM/dd/yyyy");
 
-		key = "" + dateFormatter.format(this.getDOS().getTime());
-		key = key + "~" + this.getSurgeon();
-		key = key + "~" + this.getMRN();
-		key = key + "~" + this.getGender();	
-		return key;	
-	}
-	
 	public static void main(String[] args) {
 		Calendar DOB = Calendar.getInstance();
 		DOB.set(1988, 7, 3);
 		Calendar DOS = Calendar.getInstance();
 		DOS.set(1999, 0, 1);
-		AnesthesiaRecord aRecord = new AnesthesiaRecord(DOB, DOS, 175.0, 68.1, "Arun Ramappa", 25.6, "Male", 1234567);
+		AnesthesiaRecord aRecord = new AnesthesiaRecord(DOB, DOS, 175.0, 68.1,
+				"Arun Ramappa", 25.6, "Male", 1234567);
 		System.out.println(aRecord.toString());
 	}
 }
