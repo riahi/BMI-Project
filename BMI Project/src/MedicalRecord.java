@@ -23,6 +23,7 @@ public class MedicalRecord {
 	private String mod1;
 	private String mod2;
 	private int charge;
+	private boolean mod22 = false;
 	
 	public MedicalRecord(AnesthesiaRecord a, BillingRecord b) {
 		int MRN1, MRN2;
@@ -161,7 +162,8 @@ public class MedicalRecord {
 				temp += "~" + procedure.get(i).toString();
 			}
 		}
-
+		
+		temp += "~" + mod22;
 		
 		return temp;
 	}
@@ -369,5 +371,19 @@ public class MedicalRecord {
 	 */
 	public void setProcedure(ArrayList<CPTCode> procedure) {
 		this.procedure = procedure;
+	}
+
+	/**
+	 * @return the mod22
+	 */
+	public boolean isMod22() {
+		return mod22;
+	}
+
+	/**
+	 * @param mod22 the mod22 to set
+	 */
+	public void setMod22(boolean mod22) {
+		this.mod22 = mod22;
 	}
 }

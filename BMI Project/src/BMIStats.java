@@ -1,4 +1,4 @@
-// 2011-07-14
+// 2011-07-18
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -20,61 +20,76 @@ public class BMIStats {
 	public static LinkedList<MedicalRecord> addModifiers(
 			LinkedList<MedicalRecord> medList,
 			LinkedList<ModifierRecord> modList) {
-		ConcurrentHashMap<String, MedicalRecord> medTable = new ConcurrentHashMap<String, MedicalRecord>();
-		MedicalRecord tempMedR = null;
+
+		// ConcurrentHashMap<String, MedicalRecord> medTable = new
+		// ConcurrentHashMap<String, MedicalRecord>();
+		ConcurrentHashMap<String, ModifierRecord> modTable = new ConcurrentHashMap<String, ModifierRecord>();
 		ModifierRecord tempModR = null;
+		MedicalRecord tempMedR = null;
 		ArrayList<CPTCode> tempCodes = null;
 
-		// Put medList into a hashmap
-		Iterator<MedicalRecord> iter = medList.iterator();
+		// Put modifier list into a hashmap
+		Iterator<ModifierRecord> iter = modList.iterator();
 		while (iter.hasNext()) {
-			tempMedR = iter.next();
-			medTable.put(tempMedR.createKey(), tempMedR);
+			tempModR = iter.next();
+			// Places each ModifierRecord into the hashmap, using the createkey
+			// string plus the CPT code the ModifierRecord holds
+			modTable.put(tempModR.createKey() + "~"
+					+ tempModR.getProcedure().get(0).getCode(), tempModR);
 		}
 
 		// Empty this out to prevent any weird pointers hanging around
-		tempMedR = null;
+		tempModR = null;
 
-		// Query hashmap for medical records so we can add CPT modifiers to
-		// them.
-		CPTCode code = null;
-		Iterator<ModifierRecord> iter2 = modList.iterator();
+		// Iterate through the LinkedList of MedicalRecords, getting the CPT
+		// Arrays of each record. Query each CPT code from the ModifierRecord
+		// hashmap.
+		ArrayList<CPTCode> CPTCodes = null;
+		Iterator<MedicalRecord> iter2 = medList.iterator();
 		while (iter2.hasNext()) {
-			tempModR = iter2.next();
-			// Get Procedure from the Modifier Record
-			code = tempModR.getProcedure().get(0);
-
-			// If the table has the patient, then go in and grab the ArrayList
-			// of Procedures
-			if (medTable.containsKey(tempModR.createKey())) {
-				tempMedR = medTable.get(tempModR.createKey());
-				tempCodes = tempMedR.getProcedure();
-
-				// Find the specific procedure from within the patient's CPTCode
-				// ArrayList
-				CPTCode tempPatientCode = null;
-				Iterator<CPTCode> iter3 = tempCodes.iterator();
-				while (iter3.hasNext()) {
-					tempPatientCode = iter3.next();
-					if (tempPatientCode.getCode().equals(code.getCode())) {
-						// Add in the modifiers
-						tempPatientCode.setMod1(tempModR.getMod1());
-						tempPatientCode.setMod2(tempModR.getMod2());
-						tempPatientCode.setCharge(tempModR.getCharge());
-					}
+			tempMedR = iter2.next();
+			// Get Procedure ArrayList from the Medical Record
+			CPTCodes = tempMedR.getProcedure();
+			
+			// Iterate through Patient's CPTCode Arraylist
+			CPTCode tempPatientCode = null;
+			ModifierRecord tempModRecord = null;
+			Iterator<CPTCode> iter3 = CPTCodes.iterator();
+			while (iter3.hasNext()) {
+				tempPatientCode = iter3.next();
+				// Query Hashmap (key = MedR-key + ~CPTXX)
+				tempModRecord = modTable.get(tempMedR.createKey() + "~" + tempPatientCode.getCode());
+				// If they match (protecting against calling null)
+				if (tempModRecord != null && (tempModRecord.createKey() + "~" + tempModRecord.getProcedure().get(0).getCode()).equals(tempMedR.createKey() + "~" + tempPatientCode.getCode())) {
+					// Add in the modifiers
+					tempPatientCode.setMod1(tempModRecord.getMod1());
+					tempPatientCode.setMod2(tempModRecord.getMod2());
+					tempPatientCode.setCharge(tempModRecord.getCharge());
+					
+					// Set the Modifier-22 Flag in the Medical record
+					if(tempModRecord.getMod1().equals("22") || tempModRecord.getMod2().equals("22"))
+						tempMedR.setMod22(true);
+				}
+				// If they don't match, let's initialize just in case and
+				// prevent from column misalignment
+				else {
+					tempPatientCode.setMod1("");
+					tempPatientCode.setMod2("");
+					tempPatientCode.setCharge(0);
 				}
 			}
-			code = null;
+			CPTCodes = null;
 		}
 
 		// Convert the MedTable back to a LinkedList
-		// May not have to do that after all, due to the quasi pointers we have going on...ughh... 
-// Debug
-//		System.out.println(medTable.get("01/01/2010~Abdeen, Ayesha MD~2252977~M"));
-//		Iterator x = medList.iterator();
-//		while(x.hasNext()) {
-//			System.out.println(x.next());
-//		}
+		// May not have to do that after all, due to the quasi pointers we have
+		// going on...ughh...
+		// Debug
+		// System.out.println(medTable.get("01/01/2010~Abdeen, Ayesha MD~2252977~M"));
+		// Iterator x = medList.iterator();
+		// while(x.hasNext()) {
+		// System.out.println(x.next());
+		// }
 		return medList;
 	}
 
@@ -572,53 +587,23 @@ public class BMIStats {
 				// Debug
 				System.out.println(mRecord);
 				modList.add(mRecord);
-				
+
 				// Gotta clear em out and avoid the pointers...
 				diagnosis = new ArrayList<ICD9Code>();
 				procedure = new ArrayList<CPTCode>();
-				
+
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
 
-	// public static boolean equals(AnesthesiaRecord aR, BillingRecord bR,
-	// ModifierRecord mR) {
-	//
-	// boolean MRN, DOS, surgeon, gender;
-	// String DOS1, DOS2, DOS3;
-	// SimpleDateFormat dateFormatter;
-	//
-	// if (aR.getMRN() == bR.getMRN() && (("" +
-	// aR.getMRN()).equals(mR.getMRN())))
-	// MRN = true;
-	// else
-	// MRN = false;
-	//
-	// dateFormatter = new SimpleDateFormat("MM/dd/yyyy");
-	//
-	// DOS1 = dateFormatter.format(aR.getDOS().getTime());
-	// DOS2 = dateFormatter.format(bR.getDOS().getTime());
-	// DOS3 = dateFormatter.format(mR.getDOS().getTime());
-	//
-	// DOS = (DOS1.equals(DOS2)) && (DOS1.equals(DOS3));
-	//
-	// surgeon = (aR.getSurgeon().equals(bR.getSurgeon())) &&
-	// (aR.getSurgeon().equals(mR.getSurgeon()));
-	//
-	// gender = (aR.getGender().equals(bR.getGender())) &&
-	// (aR.getGender().equals(mR.getGender()));
-	//
-	// return (MRN && DOS && surgeon && gender);
-	// }
-
 	public static void main(String[] args) throws IOException {
 		// Set up to read input from keyboard
 		String input = "";
 		InputStreamReader isr = new InputStreamReader(System.in);
 		BufferedReader br = new BufferedReader(isr);
-		
+
 		ConcurrentHashMap<String, BillingRecord> billingTable = null;
 		LinkedList<AnesthesiaRecord> anesthesiaList = null;
 		LinkedList<MedicalRecord> medList = null;
@@ -652,13 +637,13 @@ public class BMIStats {
 					System.out.println(billingTable.size()
 							+ " Billing Records loaded successfully.");
 				} else if (input.equals("3")) {
-					// Load Modifier 
+					// Load Modifier
 					modList = new LinkedList<ModifierRecord>();
 					importModifierCodes("cRecords.csv", modList);
 					System.out.println(modList.size()
 							+ " Modifier Records loaded successfully.");
-				}else if (input.equals("0")) {
-					// Load Modifier 
+				} else if (input.equals("0")) {
+					// Load Modifier
 					anesthesiaList = new LinkedList<AnesthesiaRecord>();
 					importToLinkedList("aRecords.csv", anesthesiaList);
 					System.out.println(anesthesiaList.size()
@@ -752,52 +737,6 @@ public class BMIStats {
 		return mList;
 	}
 
-	// public static LinkedList<MedicalRecord> merge(
-	// LinkedList<AnesthesiaRecord> aList, ConcurrentHashMap<String,
-	// BillingRecord> billingTable, LinkedList<ModifierRecord> modList) {
-	//
-	// LinkedList<MedicalRecord> mList = new LinkedList<MedicalRecord>();
-	// AnesthesiaRecord aR = null; boolean theSame = false; String key;
-	// BillingRecord bR = null; ModifierRecord mR = null;
-	//
-	// // Convert modList into a HashMap Iterator<ModifierRecord> iter =
-	// modList.iterator(); ModifierRecord tempMod; ConcurrentHashMap<String,
-	// ModifierRecord> modTable = new ConcurrentHashMap<String,
-	// ModifierRecord>();
-	//
-	// while(iter.hasNext()) { tempMod = iter.next();
-	// modTable.put(tempMod.createKey(), tempMod); }
-	//
-	// while (!aList.isEmpty()) { aR = aList.remove(); key = aR.createKey(); bR
-	// = billingTable.get(key); mR = modTable.get(key); // Error-checking if (bR
-	// != null && mR != null) { theSame = equals(aR, bR, mR); if (theSame)
-	// mList.add(new MedicalRecord(aR, bR, mR)); } }
-	//
-	// return mList; }
-
-	// public static LinkedList<MedicalRecord> merge(
-	// LinkedList<AnesthesiaRecord> aList, ConcurrentHashMap<String,
-	// BillingRecord> billingTable, LinkedList<ModifierRecord> modList) {
-	//
-	// LinkedList<MedicalRecord> mList = new LinkedList<MedicalRecord>();
-	// AnesthesiaRecord aR = null; boolean theSame = false; String key;
-	// BillingRecord bR = null; ModifierRecord mR = null;
-	//
-	// // Convert modList into a HashMap Iterator<ModifierRecord> iter =
-	// modList.iterator(); ModifierRecord tempMod; ConcurrentHashMap<String,
-	// ModifierRecord> modTable = new ConcurrentHashMap<String,
-	// ModifierRecord>();
-	//
-	// while(iter.hasNext()) { tempMod = iter.next();
-	// modTable.put(tempMod.createKey(), tempMod); }
-	//
-	// while (!aList.isEmpty()) { aR = aList.remove(); key = aR.createKey(); bR
-	// = billingTable.get(key); mR = modTable.get(key); // Error-checking if (bR
-	// != null && mR != null) { theSame = equals(aR, bR, mR); if (theSame)
-	// mList.add(new MedicalRecord(aR, bR, mR)); } }
-	//
-	// return mList; }
-
 	public static void printMenu(String input) {
 		if (input.equals("")) {
 			System.out.println("Menu:");
@@ -823,29 +762,6 @@ public class BMIStats {
 			System.out.println("4) CPT/BMI by Service");
 		}
 	}
-
-	// public static LinkedList<MedicalRecord> merge(
-	// LinkedList<AnesthesiaRecord> aList, ConcurrentHashMap<String,
-	// BillingRecord> billingTable, LinkedList<ModifierRecord> modList) {
-	//
-	// LinkedList<MedicalRecord> mList = new LinkedList<MedicalRecord>();
-	// AnesthesiaRecord aR = null; boolean theSame = false; String key;
-	// BillingRecord bR = null; ModifierRecord mR = null;
-	//
-	// // Convert modList into a HashMap Iterator<ModifierRecord> iter =
-	// modList.iterator(); ModifierRecord tempMod; ConcurrentHashMap<String,
-	// ModifierRecord> modTable = new ConcurrentHashMap<String,
-	// ModifierRecord>();
-	//
-	// while(iter.hasNext()) { tempMod = iter.next();
-	// modTable.put(tempMod.createKey(), tempMod); }
-	//
-	// while (!aList.isEmpty()) { aR = aList.remove(); key = aR.createKey(); bR
-	// = billingTable.get(key); mR = modTable.get(key); // Error-checking if (bR
-	// != null && mR != null) { theSame = equals(aR, bR, mR); if (theSame)
-	// mList.add(new MedicalRecord(aR, bR, mR)); } }
-	//
-	// return mList; }
 
 	public static void writeToCSV(LinkedList mR, String filename)
 			throws IOException {
